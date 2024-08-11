@@ -1,0 +1,4 @@
+- make DB schema
+- automate migrations
+- get familiar with Minio
+- make a graphql gateway service (in Rust)
