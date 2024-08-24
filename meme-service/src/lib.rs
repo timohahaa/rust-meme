@@ -1,6 +1,10 @@
 use std::{env, error::Error};
 
-use actix_web::{web, App, HttpResponse, HttpServer};
+use actix_web::{
+    web::{self, Data},
+    App, HttpResponse, HttpServer,
+};
+use modules::memes;
 use sqlx::postgres::PgPoolOptions;
 
 mod controllers;
@@ -21,14 +25,31 @@ impl Config {
     }
 }
 
+#[derive(Clone)]
+struct Modules {
+    memes: memes::Module,
+}
+
+#[derive(Clone)]
+struct AppData {
+    mods: Modules,
+}
+
 pub async fn run(cfg: Config) -> Result<(), Box<dyn Error>> {
     let pool = PgPoolOptions::new()
         .max_connections(5)
         .connect(&cfg.postgres_dsn)
         .await?;
 
-    HttpServer::new(|| {
+    let meme_module = modules::memes::Module::new(pool).await;
+
+    let app_data = AppData {
+        mods: Modules { memes: meme_module },
+    };
+
+    HttpServer::new(move || {
         App::new()
+            .app_data(Data::new(app_data.clone()))
             .route("/health", web::get().to(|| async { HttpResponse::Ok() }))
             .service(
                 web::scope("/api")
