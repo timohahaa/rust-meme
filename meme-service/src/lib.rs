@@ -1,4 +1,4 @@
-use std::error::Error;
+use std::{env, error::Error};
 
 use actix_web::{web, App, HttpResponse, HttpServer};
 use sqlx::postgres::PgPoolOptions;
@@ -8,6 +8,17 @@ mod modules;
 
 pub struct Config {
     pub postgres_dsn: String,
+}
+
+impl Config {
+    pub fn build_from_env() -> Result<Config, &'static str> {
+        let postgres_dsn = match env::var("POSTGRES_DSN") {
+            Ok(dsn) => dsn,
+            Err(_) => return Err("environment variable POSTGRES_DSN is not defined"),
+        };
+
+        Ok(Config { postgres_dsn })
+    }
 }
 
 pub async fn run(cfg: Config) -> Result<(), Box<dyn Error>> {
