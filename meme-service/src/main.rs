@@ -1,6 +1,5 @@
-use std::error::Error;
-
 use meme_service::Config;
+use std::error::Error;
 
 #[actix_web::main]
 async fn main() -> Result<(), Box<dyn Error>> {

@@ -1,4 +1,5 @@
-use std::{env, error::Error};
+mod controllers;
+mod modules;
 
 use actix_web::{
     web::{self, Data},
@@ -6,9 +7,7 @@ use actix_web::{
 };
 use modules::memes;
 use sqlx::postgres::PgPoolOptions;
-
-mod controllers;
-mod modules;
+use std::{env, error::Error};
 
 pub struct Config {
     pub postgres_dsn: String,
