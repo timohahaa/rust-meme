@@ -1,7 +1,7 @@
 -- +migrate Up
-CREATE SCHEMA IF EXISTS memes;
+CREATE SCHEMA IF NOT EXISTS memes;
 
-CREATE TABLE IF EXISTS memes.memes (
+CREATE TABLE IF NOT EXISTS memes.memes (
     meme_id       UUID      NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY
     , name        TEXT      NOT NULL 
     , description TEXT

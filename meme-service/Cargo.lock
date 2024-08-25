@@ -398,6 +398,7 @@ dependencies = [
  "iana-time-zone",
  "js-sys",
  "num-traits",
+ "serde",
  "wasm-bindgen",
  "windows-targets 0.52.6",
 ]
@@ -1053,6 +1054,7 @@ dependencies = [
  "actix-web",
  "chrono",
  "futures",
+ "serde",
  "sqlx",
  "uuid",
 ]
@@ -2022,6 +2024,7 @@ checksum = "81dfa00651efa65069b0b6b651f4aaa31ba9e3c3ce0137aaad053604ee7e0314"
 dependencies = [
  "getrandom",
  "rand",
+ "serde",
  "uuid-macro-internal",
 ]
 

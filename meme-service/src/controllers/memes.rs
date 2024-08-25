@@ -1,10 +1,12 @@
-use actix_web::{web, HttpRequest, Responder};
+use crate::AppData;
+use actix_web::{web, HttpRequest, Responder, Result};
 use uuid::Uuid;
 
-use crate::AppData;
-
-pub async fn list(_req: HttpRequest, shared: web::Data<AppData>) -> impl Responder {
-    shared.mods.memes.list().await
+pub async fn list(_req: HttpRequest, shared: web::Data<AppData>) -> Result<impl Responder> {
+    match shared.mods.memes.list().await {
+        Ok(list) => return Ok(web::Json(list)),
+        Err(e) => return Err(e.into()),
+    };
 }
 
 pub async fn get(

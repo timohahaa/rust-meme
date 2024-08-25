@@ -4,7 +4,7 @@ mod queries;
 use futures::TryStreamExt;
 use model::Model;
 use queries::list_memes_query;
-use sqlx::{postgres::PgRow, Pool, Postgres, Row};
+use sqlx::{Pool, Postgres};
 use std::error::Error;
 use uuid::Uuid;
 
@@ -19,20 +19,9 @@ impl Module {
     }
 
     pub async fn list(&self) -> Result<Vec<Model>, Box<dyn Error>> {
-        let mut rows = sqlx::query(list_memes_query)
-            .map(|row: PgRow| -> Model {
-                Model {
-                    id: row.get("meme_id"),
-                    name: row.get("name"),
-                    description: row.get("description"),
-                    s3_path: row.get("s3_path"),
-                    created_at: row.get("created_at"),
-                    updated_at: row.get("updated_at"),
-                }
-            })
-            .fetch(&self.conn);
-
+        let mut rows = sqlx::query_as(list_memes_query).fetch(&self.conn);
         let mut memes = vec![];
+
         while let Some(meme) = rows.try_next().await? {
             memes.push(meme)
         }
