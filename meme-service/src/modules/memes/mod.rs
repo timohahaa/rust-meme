@@ -2,10 +2,11 @@ mod model;
 mod queries;
 
 use futures::TryStreamExt;
-use model::Model;
-use queries::list_memes_query;
+use model::{CreateForm, Model, UpdateForm};
+use queries::{
+    create_meme_query, delete_meme_query, get_meme_query, list_memes_query, update_meme_query,
+};
 use sqlx::{Pool, Postgres};
-use std::error::Error;
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -18,7 +19,7 @@ impl Module {
         Module { conn }
     }
 
-    pub async fn list(&self) -> Result<Vec<Model>, Box<dyn Error>> {
+    pub async fn list(&self) -> Result<Vec<Model>, sqlx::Error> {
         let mut rows = sqlx::query_as(list_memes_query).fetch(&self.conn);
         let mut memes = vec![];
 
@@ -29,19 +30,39 @@ impl Module {
         Ok(memes)
     }
 
-    pub async fn get(&self, id: Uuid) -> String {
-        format!("get meme with id {}", id)
+    pub async fn get(&self, id: Uuid) -> Result<Model, sqlx::Error> {
+        sqlx::query_as(get_meme_query)
+            .bind(id)
+            .fetch_one(&self.conn)
+            .await
     }
 
-    pub async fn create(&self) -> String {
-        format!("create meme with id {}", Uuid::new_v4())
+    pub async fn create(&self, form: CreateForm) -> Result<Model, sqlx::Error> {
+        sqlx::query_as(create_meme_query)
+            .bind(form.name)
+            .bind(form.description)
+            .bind(form.s3_path)
+            .fetch_one(&self.conn)
+            .await
     }
 
-    pub async fn update(&self, id: Uuid) -> String {
-        format!("update meme with id {}", id)
+    pub async fn update(&self, id: Uuid, form: UpdateForm) -> Result<Model, sqlx::Error> {
+        sqlx::query_as(update_meme_query)
+            .bind(id)
+            .bind(form.name)
+            .bind(form.description)
+            .fetch_one(&self.conn)
+            .await
     }
 
-    pub async fn delete(&self, id: Uuid) -> String {
-        format!("delete meme with id {}", id)
+    pub async fn delete(&self, id: Uuid) -> Result<(), sqlx::Error> {
+        match sqlx::query(delete_meme_query)
+            .bind(id)
+            .execute(&self.conn)
+            .await
+        {
+            Ok(_) => Ok(()),
+            Err(sqlx_error) => Err(sqlx_error),
+        }
     }
 }

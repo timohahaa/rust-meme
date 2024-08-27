@@ -12,3 +12,16 @@ pub struct Model {
     pub created_at: NaiveDateTime,
     pub updated_at: Option<NaiveDateTime>,
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct CreateForm {
+    pub name: String,
+    pub description: Option<String>,
+    pub s3_path: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct UpdateForm {
+    pub name: Option<String>,
+    pub description: Option<String>,
+}
