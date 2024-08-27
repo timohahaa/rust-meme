@@ -1,3 +1,4 @@
+mod common;
 mod controllers;
 mod modules;
 
