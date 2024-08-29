@@ -9,6 +9,8 @@ use queries::{
 use sqlx::{Pool, Postgres};
 use uuid::Uuid;
 
+use crate::common::errors;
+
 #[derive(Clone)]
 pub struct Module {
     conn: Pool<Postgres>,
@@ -19,7 +21,7 @@ impl Module {
         Module { conn }
     }
 
-    pub async fn list(&self) -> Result<Vec<Model>, sqlx::Error> {
+    pub async fn list(&self) -> Result<Vec<Model>, errors::AppError> {
         let mut rows = sqlx::query_as(list_memes_query).fetch(&self.conn);
         let mut memes = vec![];
 
@@ -30,39 +32,51 @@ impl Module {
         Ok(memes)
     }
 
-    pub async fn get(&self, id: Uuid) -> Result<Model, sqlx::Error> {
-        sqlx::query_as(get_meme_query)
+    pub async fn get(&self, id: Uuid) -> Result<Model, errors::AppError> {
+        match sqlx::query_as::<_, Model>(get_meme_query)
             .bind(id)
             .fetch_one(&self.conn)
             .await
+        {
+            Ok(model) => Ok(model),
+            Err(e) => Err(e.into()),
+        }
     }
 
-    pub async fn create(&self, form: CreateForm) -> Result<Model, sqlx::Error> {
-        sqlx::query_as(create_meme_query)
+    pub async fn create(&self, form: CreateForm) -> Result<Model, errors::AppError> {
+        match sqlx::query_as::<_, Model>(create_meme_query)
             .bind(form.name)
             .bind(form.description)
             .bind(form.s3_path)
             .fetch_one(&self.conn)
             .await
+        {
+            Ok(model) => Ok(model),
+            Err(e) => Err(e.into()),
+        }
     }
 
-    pub async fn update(&self, id: Uuid, form: UpdateForm) -> Result<Model, sqlx::Error> {
-        sqlx::query_as(update_meme_query)
+    pub async fn update(&self, id: Uuid, form: UpdateForm) -> Result<Model, errors::AppError> {
+        match sqlx::query_as::<_, Model>(update_meme_query)
             .bind(id)
             .bind(form.name)
             .bind(form.description)
             .fetch_one(&self.conn)
             .await
+        {
+            Ok(model) => Ok(model),
+            Err(e) => Err(e.into()),
+        }
     }
 
-    pub async fn delete(&self, id: Uuid) -> Result<(), sqlx::Error> {
+    pub async fn delete(&self, id: Uuid) -> Result<(), errors::AppError> {
         match sqlx::query(delete_meme_query)
             .bind(id)
             .execute(&self.conn)
             .await
         {
             Ok(_) => Ok(()),
-            Err(sqlx_error) => Err(sqlx_error),
+            Err(e) => Err(e.into()),
         }
     }
 }

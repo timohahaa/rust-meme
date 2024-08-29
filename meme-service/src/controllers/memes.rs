@@ -1,67 +1,57 @@
+use crate::common::errors::AppError;
+use crate::modules::memes;
 use crate::AppData;
-use crate::{common::render, modules::memes};
-use actix_web::http::StatusCode;
-use actix_web::{web, HttpRequest, Responder, Result};
+use actix_web::{web, HttpRequest, HttpResponse, Responder, Result};
 use uuid::Uuid;
 
-pub async fn list(_req: HttpRequest, shared: web::Data<AppData>) -> Result<impl Responder> {
-    match shared.mods.memes.list().await {
-        Ok(list) => return Ok(web::Json(list)),
-        Err(e) => {
-            return Err(render::error(
-                e.to_string(),
-                StatusCode::INTERNAL_SERVER_ERROR,
-            ))
-        }
-    };
+pub async fn list(
+    _req: HttpRequest,
+    shared: web::Data<AppData>,
+) -> Result<impl Responder, AppError> {
+    let memes = shared.mods.memes.list().await?;
+    Ok(web::Json(memes))
 }
 
 pub async fn get(
     _req: HttpRequest,
     shared: web::Data<AppData>,
     path: web::Path<String>,
-) -> impl Responder {
-    let id = Uuid::parse_str(&path.into_inner());
-    //match id {
-    //    Ok(uid) => return shared.mods.memes.get(uid).await,
-    //    Err(e) => format!("an error occured: {}", e),
-    //}
+) -> Result<impl Responder, AppError> {
+    let id = Uuid::parse_str(&path.into_inner())?;
+    let meme = shared.mods.memes.get(id).await?;
 
-    ""
+    Ok(web::Json(meme))
 }
 
 pub async fn create(
     _req: HttpRequest,
     shared: web::Data<AppData>,
     form: web::Json<memes::model::CreateForm>,
-) -> impl Responder {
-    shared.mods.memes.create(form.into_inner()).await;
+) -> Result<impl Responder, AppError> {
+    let meme = shared.mods.memes.create(form.into_inner()).await?;
 
-    ""
+    Ok(web::Json(meme))
 }
 
 pub async fn update(
     _req: HttpRequest,
     shared: web::Data<AppData>,
     path: web::Path<String>,
-) -> impl Responder {
-    let id = Uuid::parse_str(&path.into_inner());
-    //match id {
-    //    Ok(uid) => shared.mods.memes.update(uid).await,
-    //    Err(e) => format!("an error occured: {}", e),
-    //};
-    ""
+    form: web::Json<memes::model::UpdateForm>,
+) -> Result<impl Responder, AppError> {
+    let id = Uuid::parse_str(&path.into_inner())?;
+    let meme = shared.mods.memes.update(id, form.into_inner()).await?;
+
+    Ok(web::Json(meme))
 }
 
 pub async fn delete(
     _req: HttpRequest,
     shared: web::Data<AppData>,
     path: web::Path<String>,
-) -> impl Responder {
-    let id = Uuid::parse_str(&path.into_inner());
-    //match id {
-    //    Ok(uid) => shared.mods.memes.delete(uid).await,
-    //    Err(e) => format!("an error occured: {}", e),
-    //}
-    ""
+) -> Result<impl Responder, AppError> {
+    let id = Uuid::parse_str(&path.into_inner())?;
+    shared.mods.memes.delete(id).await?;
+
+    Ok(HttpResponse::Ok())
 }
