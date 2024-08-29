@@ -6,6 +6,16 @@ use serde::Serialize;
 use sqlx;
 use std::fmt;
 
+#[derive(Debug, Serialize)]
+struct HttpErrorContainer {
+    error: HttpError,
+}
+
+#[derive(Debug, Serialize)]
+struct HttpError {
+    message: Option<String>,
+}
+
 #[derive(Debug)]
 pub enum AppErrorType {
     DbError,
@@ -25,11 +35,21 @@ impl fmt::Display for AppError {
     }
 }
 
+impl AppError {
+    fn to_json(&self) -> HttpErrorContainer {
+        HttpErrorContainer {
+            error: HttpError {
+                message: self.message.clone(),
+            },
+        }
+    }
+}
+
 impl ResponseError for AppError {
     fn error_response(&self) -> HttpResponse {
         HttpResponse::build(self.status_code())
             .insert_header(ContentType::json())
-            .json(&self.message)
+            .json(self.to_json())
     }
 
     fn status_code(&self) -> StatusCode {
