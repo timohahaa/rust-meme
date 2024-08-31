@@ -1,8 +1,20 @@
 use crate::common::errors::AppError;
 use crate::modules::memes;
 use crate::AppData;
-use actix_web::{web, HttpRequest, HttpResponse, Responder, Result};
+use actix_web::{
+    body::BodySize,
+    web::{self, Bytes},
+    HttpMessage, HttpRequest, HttpResponse, Responder, Result,
+};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use validator::Validate;
+
+#[derive(Serialize, Deserialize)]
+struct ListQueryParams {
+    limit: Option<u16>,
+    offset: Option<u16>,
+}
 
 pub async fn list(
     _req: HttpRequest,
@@ -28,6 +40,7 @@ pub async fn create(
     shared: web::Data<AppData>,
     form: web::Json<memes::model::CreateForm>,
 ) -> Result<impl Responder, AppError> {
+    form.validate()?;
     let meme = shared.mods.memes.create(form.into_inner()).await?;
 
     Ok(web::Json(meme))

@@ -20,11 +20,23 @@ struct HttpError {
 pub enum AppErrorType {
     DbError,
     InvalidUUIDError,
+    ValidationError,
+}
+
+impl AppErrorType {
+    fn code(&self) -> u32 {
+        match self {
+            AppErrorType::DbError => 500001,
+            AppErrorType::InvalidUUIDError => 400001,
+            AppErrorType::ValidationError => 400002,
+        }
+    }
 }
 
 #[derive(Debug, Serialize)]
 pub struct AppError {
     pub message: Option<String>,
+    pub code: u32,
     #[serde(skip_serializing)]
     pub error_type: AppErrorType,
 }
@@ -56,24 +68,40 @@ impl ResponseError for AppError {
         match self.error_type {
             AppErrorType::DbError => StatusCode::INTERNAL_SERVER_ERROR,
             AppErrorType::InvalidUUIDError => StatusCode::BAD_REQUEST,
+            AppErrorType::ValidationError => StatusCode::BAD_REQUEST,
         }
     }
 }
 
 impl From<sqlx::Error> for AppError {
     fn from(err: sqlx::Error) -> AppError {
+        let et = AppErrorType::DbError;
         AppError {
             message: Some(err.to_string()),
-            error_type: AppErrorType::DbError,
+            code: et.code(),
+            error_type: et,
         }
     }
 }
 
 impl From<uuid::Error> for AppError {
     fn from(err: uuid::Error) -> AppError {
+        let et = AppErrorType::InvalidUUIDError;
         AppError {
             message: Some(format!("invalid UUID format: {}", err.to_string())),
-            error_type: AppErrorType::InvalidUUIDError,
+            code: et.code(),
+            error_type: et,
+        }
+    }
+}
+
+impl From<validator::ValidationErrors> for AppError {
+    fn from(errs: validator::ValidationErrors) -> AppError {
+        let et = AppErrorType::ValidationError;
+        AppError {
+            message: Some(format!("validation error: {}", errs.to_string())),
+            code: et.code(),
+            error_type: et,
         }
     }
 }

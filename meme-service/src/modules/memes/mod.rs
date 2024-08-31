@@ -47,7 +47,7 @@ impl Module {
         match sqlx::query_as::<_, Model>(create_meme_query)
             .bind(form.name)
             .bind(form.description)
-            .bind(form.s3_path)
+            .bind(form.object_id)
             .fetch_one(&self.conn)
             .await
         {

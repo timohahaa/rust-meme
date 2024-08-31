@@ -4,7 +4,7 @@ SELECT
     meme_id
     , name
     , description
-    , s3_path
+    , object_id
     , created_at
     , updated_at
 FROM memes.memes
@@ -16,7 +16,7 @@ SELECT
     meme_id
     , name
     , description
-    , s3_path
+    , object_id
     , created_at
     , updated_at
 FROM memes.memes
@@ -28,7 +28,7 @@ pub static create_meme_query: &str = "
 INSERT INTO memes.memes (
     name
     , description
-    , s3_path
+    , object_id
 ) VALUES (
     $1, $2, $3
 )
@@ -36,7 +36,7 @@ RETURNING
     meme_id
     , name
     , description
-    , s3_path
+    , object_id
     , created_at
     , updated_at
 ";
@@ -53,7 +53,7 @@ RETURNING
     meme_id
     , name
     , description
-    , s3_path
+    , object_id
     , created_at
     , updated_at
 ";
