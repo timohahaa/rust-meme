@@ -8,12 +8,15 @@ use actix_web::{
 };
 use common::errors::AppError;
 use minio::s3;
+use minio::s3::args::{BucketExistsArgs, MakeBucketArgs};
 use minio::s3::client::{Client, ClientBuilder};
 use minio::s3::creds::StaticProvider;
 use minio::s3::http::BaseUrl;
 use modules::memes;
 use sqlx::postgres::PgPoolOptions;
 use std::{env, error::Error};
+
+const BUCKET_NAME: &str = "memes";
 
 pub struct S3 {
     base_url: String,
@@ -73,6 +76,7 @@ pub async fn run(cfg: Config) -> Result<(), Box<dyn Error>> {
         .await?;
 
     let s3_client = connect_to_s3(cfg.s3)?;
+    setup_bucket(&s3_client).await?;
     let meme_module = modules::memes::Module::new(pool, s3_client).await;
 
     let app_data = AppData {
@@ -114,4 +118,20 @@ fn connect_to_s3(conf: S3) -> Result<Client, s3::error::Error> {
         .build()?;
 
     Ok(client)
+}
+
+async fn setup_bucket(client: &Client) -> Result<(), s3::error::Error> {
+    // Check 'bucket_name' bucket exist or not.
+    let exists: bool = client
+        .bucket_exists(&BucketExistsArgs::new(&BUCKET_NAME).unwrap()) // unwrap cause im not dumb
+        .await?;
+
+    // Make 'bucket_name' bucket if not exist.
+    if !exists {
+        client
+            .make_bucket(&MakeBucketArgs::new(&BUCKET_NAME).unwrap())
+            .await?;
+    }
+
+    Ok(())
 }

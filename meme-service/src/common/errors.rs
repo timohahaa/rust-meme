@@ -2,6 +2,7 @@ use actix_web::{
     http::{header::ContentType, StatusCode},
     HttpResponse, ResponseError,
 };
+use minio::s3;
 use serde::Serialize;
 use sqlx;
 use std::fmt;
@@ -22,12 +23,14 @@ pub enum AppErrorType {
     JsonValidationError,
     ValidationError,
     InvalidUUIDError,
+    S3Error,
 }
 
 impl AppErrorType {
     fn code(&self) -> u32 {
         match self {
             AppErrorType::DbError => 500001,
+            AppErrorType::S3Error => 500002
             AppErrorType::JsonValidationError => 400001,
             AppErrorType::ValidationError => 400002,
             AppErrorType::InvalidUUIDError => 400003,
@@ -78,6 +81,7 @@ impl ResponseError for AppError {
     fn status_code(&self) -> StatusCode {
         match self.error_type {
             AppErrorType::DbError => StatusCode::INTERNAL_SERVER_ERROR,
+            AppErrorType::S3Error => StatusCode::INTERNAL_SERVER_ERROR,
             AppErrorType::InvalidUUIDError => StatusCode::BAD_REQUEST,
             AppErrorType::ValidationError => StatusCode::BAD_REQUEST,
             AppErrorType::JsonValidationError => StatusCode::BAD_REQUEST,
@@ -112,6 +116,17 @@ impl From<validator::ValidationErrors> for AppError {
         let et = AppErrorType::ValidationError;
         AppError {
             message: Some(format!("validation error: {}", errs.to_string())),
+            code: et.code(),
+            error_type: et,
+        }
+    }
+}
+
+impl From<s3::error::Error> for AppError {
+    fn from(err: s3::error::Error) -> AppError {
+        let et = AppErrorType::S3Error;
+        AppError {
+            message: Some(err.to_string()),
             code: et.code(),
             error_type: et,
         }

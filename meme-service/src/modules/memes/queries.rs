@@ -4,7 +4,7 @@ SELECT
     meme_id
     , name
     , description
-    , object_id
+    , s3_path
     , created_at
     , updated_at
 FROM memes.memes
@@ -16,7 +16,7 @@ SELECT
     meme_id
     , name
     , description
-    , object_id
+    , s3_path
     , created_at
     , updated_at
 FROM memes.memes
@@ -28,18 +28,26 @@ pub const create_meme_query: &str = "
 INSERT INTO memes.memes (
     name
     , description
-    , object_id
+    , s3_path
+    , status
 ) VALUES (
-    $1, $2, $3
+    $1, $2, $3, 'uploading'
 )
 RETURNING
     meme_id
     , name
     , description
-    , object_id
+    , s3_path
     , created_at
     , updated_at
 ";
+
+pub const mark_as_done_query: &str = "
+UPDATE memes.memes
+SET 
+    status = 'done'
+WHERE meme_id = $1
+"
 
 pub const update_meme_query: &str = "
 UPDATE memes.memes
@@ -53,7 +61,7 @@ RETURNING
     meme_id
     , name
     , description
-    , object_id
+    , s3_path
     , created_at
     , updated_at
 ";
