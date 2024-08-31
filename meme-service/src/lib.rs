@@ -7,12 +7,23 @@ use actix_web::{
     App, HttpResponse, HttpServer,
 };
 use common::errors::AppError;
+use minio::s3;
+use minio::s3::client::{Client, ClientBuilder};
+use minio::s3::creds::StaticProvider;
+use minio::s3::http::BaseUrl;
 use modules::memes;
 use sqlx::postgres::PgPoolOptions;
 use std::{env, error::Error};
 
+pub struct S3 {
+    base_url: String,
+    access_key: String,
+    secret_key: String,
+}
+
 pub struct Config {
     pub postgres_dsn: String,
+    pub s3: S3,
 }
 
 impl Config {
@@ -21,8 +32,27 @@ impl Config {
             Ok(dsn) => dsn,
             Err(_) => return Err("environment variable POSTGRES_DSN is not defined"),
         };
+        let base_url = match env::var("S3_BASE_URL") {
+            Ok(url) => url,
+            Err(_) => return Err("environment variable S3_BASE_URL is not defined"),
+        };
+        let access_key = match env::var("S3_ACCESS_KEY") {
+            Ok(key) => key,
+            Err(_) => return Err("environment variable S3_ACCESS_KEY is not defined"),
+        };
+        let secret_key = match env::var("S3_SECRET_KEY") {
+            Ok(key) => key,
+            Err(_) => return Err("environment variable S3_SECRET_KEY is not defined"),
+        };
 
-        Ok(Config { postgres_dsn })
+        Ok(Config {
+            postgres_dsn,
+            s3: S3 {
+                base_url,
+                access_key,
+                secret_key,
+            },
+        })
     }
 }
 
@@ -42,7 +72,8 @@ pub async fn run(cfg: Config) -> Result<(), Box<dyn Error>> {
         .connect(&cfg.postgres_dsn)
         .await?;
 
-    let meme_module = modules::memes::Module::new(pool).await;
+    let s3_client = connect_to_s3(cfg.s3)?;
+    let meme_module = modules::memes::Module::new(pool, s3_client).await;
 
     let app_data = AppData {
         mods: Modules { memes: meme_module },
@@ -70,4 +101,17 @@ pub async fn run(cfg: Config) -> Result<(), Box<dyn Error>> {
     .await?;
 
     Ok(())
+}
+
+fn connect_to_s3(conf: S3) -> Result<Client, s3::error::Error> {
+    let base_url = conf.base_url.parse::<BaseUrl>()?;
+
+    let static_provider =
+        StaticProvider::new(conf.access_key.as_str(), conf.secret_key.as_str(), None);
+
+    let client = ClientBuilder::new(base_url.clone())
+        .provider(Some(Box::new(static_provider)))
+        .build()?;
+
+    Ok(client)
 }

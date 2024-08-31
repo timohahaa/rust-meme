@@ -11,6 +11,7 @@ chrono = { version = "0.4", features = ["serde"] }
 serde = { version = "1.0", features = ["derive"] }
 derive_more = {version = "1.0.0", features = ["full"]}
 validator = { version = "0.18", features = ["derive"] }
+minio = "0.1"
 
 [dependencies.sqlx]
 version = "=0.8"

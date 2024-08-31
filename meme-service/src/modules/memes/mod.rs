@@ -3,6 +3,7 @@ mod queries;
 
 use actix_multipart::form::tempfile;
 use futures::TryStreamExt;
+use minio::s3::client::Client;
 use model::{CreateForm, Model, UpdateForm};
 use queries::{
     create_meme_query, delete_meme_query, get_meme_query, list_memes_query, update_meme_query,
@@ -15,11 +16,12 @@ use crate::common::errors;
 #[derive(Clone)]
 pub struct Module {
     conn: Pool<Postgres>,
+    s3: Client,
 }
 
 impl Module {
-    pub async fn new(conn: Pool<Postgres>) -> Module {
-        Module { conn }
+    pub async fn new(conn: Pool<Postgres>, s3: Client) -> Module {
+        Module { conn, s3 }
     }
 
     pub async fn list(&self) -> Result<Vec<Model>, errors::AppError> {
