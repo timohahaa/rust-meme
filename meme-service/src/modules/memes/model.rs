@@ -1,3 +1,4 @@
+use actix_multipart::form::{tempfile::TempFile, text::Text as MpText, MultipartForm};
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -14,13 +15,18 @@ pub struct Model {
     pub updated_at: Option<NaiveDateTime>,
 }
 
-#[derive(Serialize, Deserialize, Validate)]
+#[derive(Deserialize, Validate)]
 pub struct CreateForm {
     #[validate(required)]
     pub name: Option<String>,
     pub description: Option<String>,
-    #[validate(required)]
-    pub object_id: Option<Uuid>,
+}
+
+#[derive(Validate, MultipartForm)]
+pub struct UploadForm {
+    #[multipart(limit = "100MB")]
+    pub file: TempFile,
+    pub form: MpText<CreateForm>,
 }
 
 #[derive(Serialize, Deserialize, Validate)]

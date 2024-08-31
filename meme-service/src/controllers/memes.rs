@@ -1,11 +1,8 @@
 use crate::common::errors::AppError;
-use crate::modules::memes;
+use crate::modules::memes::model;
 use crate::AppData;
-use actix_web::{
-    body::BodySize,
-    web::{self, Bytes},
-    HttpMessage, HttpRequest, HttpResponse, Responder, Result,
-};
+use actix_multipart::form::MultipartForm;
+use actix_web::{web, HttpRequest, HttpResponse, Responder, Result};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use validator::Validate;
@@ -38,10 +35,13 @@ pub async fn get(
 pub async fn create(
     _req: HttpRequest,
     shared: web::Data<AppData>,
-    form: web::Json<memes::model::CreateForm>,
+    upload_form: MultipartForm<model::UploadForm>,
 ) -> Result<impl Responder, AppError> {
+    let uf = upload_form.into_inner();
+    let form = uf.form.into_inner();
     form.validate()?;
-    let meme = shared.mods.memes.create(form.into_inner()).await?;
+    let file = uf.file;
+    let meme = shared.mods.memes.create(form).await?;
 
     Ok(web::Json(meme))
 }
@@ -50,7 +50,7 @@ pub async fn update(
     _req: HttpRequest,
     shared: web::Data<AppData>,
     path: web::Path<String>,
-    form: web::Json<memes::model::UpdateForm>,
+    form: web::Json<model::UpdateForm>,
 ) -> Result<impl Responder, AppError> {
     let id = Uuid::parse_str(&path.into_inner())?;
     let meme = shared.mods.memes.update(id, form.into_inner()).await?;

@@ -1,6 +1,7 @@
 pub mod model;
 mod queries;
 
+use actix_multipart::form::tempfile;
 use futures::TryStreamExt;
 use model::{CreateForm, Model, UpdateForm};
 use queries::{
@@ -43,11 +44,14 @@ impl Module {
         }
     }
 
-    pub async fn create(&self, form: CreateForm) -> Result<Model, errors::AppError> {
+    pub async fn create(
+        &self,
+        form: CreateForm,
+        file: tempfile::TempFile,
+    ) -> Result<Model, errors::AppError> {
         match sqlx::query_as::<_, Model>(create_meme_query)
             .bind(form.name)
             .bind(form.description)
-            .bind(form.object_id)
             .fetch_one(&self.conn)
             .await
         {
