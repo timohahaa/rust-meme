@@ -19,16 +19,18 @@ struct HttpError {
 #[derive(Debug)]
 pub enum AppErrorType {
     DbError,
-    InvalidUUIDError,
+    JsonValidationError,
     ValidationError,
+    InvalidUUIDError,
 }
 
 impl AppErrorType {
     fn code(&self) -> u32 {
         match self {
             AppErrorType::DbError => 500001,
-            AppErrorType::InvalidUUIDError => 400001,
+            AppErrorType::JsonValidationError => 400001,
             AppErrorType::ValidationError => 400002,
+            AppErrorType::InvalidUUIDError => 400003,
         }
     }
 }
@@ -55,6 +57,15 @@ impl AppError {
             },
         }
     }
+
+    pub fn json_validation_error(err: String) -> Self {
+        let et = AppErrorType::JsonValidationError;
+        AppError {
+            message: Some(err),
+            code: et.code(),
+            error_type: et,
+        }
+    }
 }
 
 impl ResponseError for AppError {
@@ -69,6 +80,7 @@ impl ResponseError for AppError {
             AppErrorType::DbError => StatusCode::INTERNAL_SERVER_ERROR,
             AppErrorType::InvalidUUIDError => StatusCode::BAD_REQUEST,
             AppErrorType::ValidationError => StatusCode::BAD_REQUEST,
+            AppErrorType::JsonValidationError => StatusCode::BAD_REQUEST,
         }
     }
 }

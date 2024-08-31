@@ -6,6 +6,7 @@ use actix_web::{
     web::{self, Data},
     App, HttpResponse, HttpServer,
 };
+use common::errors::AppError;
 use modules::memes;
 use sqlx::postgres::PgPoolOptions;
 use std::{env, error::Error};
@@ -47,8 +48,16 @@ pub async fn run(cfg: Config) -> Result<(), Box<dyn Error>> {
         mods: Modules { memes: meme_module },
     };
 
+    // custom `Json` extractor configuration
+    let json_cfg = web::JsonConfig::default()
+        // limit request payload size
+        .limit(4096)
+        // use custom error handler
+        .error_handler(|err, _req| AppError::json_validation_error(err.to_string()).into());
+
     HttpServer::new(move || {
         App::new()
+            .app_data(json_cfg.clone())
             .app_data(Data::new(app_data.clone()))
             .route("/health", web::get().to(|| async { HttpResponse::Ok() }))
             .service(

@@ -1,5 +1,5 @@
 // upper snake case is for the lame ones!!!
-pub static list_memes_query: &str = "
+pub const list_memes_query: &str = "
 SELECT
     meme_id
     , name
@@ -11,7 +11,7 @@ FROM memes.memes
 WHERE deleted_at IS NULL
 ";
 
-pub static get_meme_query: &str = "
+pub const get_meme_query: &str = "
 SELECT
     meme_id
     , name
@@ -24,7 +24,7 @@ WHERE meme_id = $1
     AND deleted_at IS NULL
 ";
 
-pub static create_meme_query: &str = "
+pub const create_meme_query: &str = "
 INSERT INTO memes.memes (
     name
     , description
@@ -41,7 +41,7 @@ RETURNING
     , updated_at
 ";
 
-pub static update_meme_query: &str = "
+pub const update_meme_query: &str = "
 UPDATE memes.memes
 SET 
     name = COALESCE(name, $2)
@@ -58,7 +58,7 @@ RETURNING
     , updated_at
 ";
 
-pub static delete_meme_query: &str = "
+pub const delete_meme_query: &str = "
 UPDATE memes.memes
 SET 
     deleted_at = CURRENT_TIMESTAMP
