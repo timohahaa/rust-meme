@@ -1,3 +1,4 @@
+use ::s3::error::S3Error;
 use actix_web::{
     http::{header::ContentType, StatusCode},
     HttpResponse, ResponseError,
@@ -124,6 +125,17 @@ impl From<validator::ValidationErrors> for AppError {
 
 impl From<s3::error::Error> for AppError {
     fn from(err: s3::error::Error) -> AppError {
+        let et = AppErrorType::S3Error;
+        AppError {
+            message: Some(err.to_string()),
+            code: et.code(),
+            error_type: et,
+        }
+    }
+}
+
+impl From<S3Error> for AppError {
+    fn from(err: S3Error) -> AppError {
         let et = AppErrorType::S3Error;
         AppError {
             message: Some(err.to_string()),

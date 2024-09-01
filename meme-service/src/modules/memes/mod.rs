@@ -4,7 +4,7 @@ mod queries;
 use actix_multipart::form::tempfile;
 use futures::TryStreamExt;
 use minio::s3::{args::UploadObjectArgs, client::Client};
-use model::{CreateForm, Model, UpdateForm};
+use model::{CreateForm, Model, PubModel, UpdateForm};
 use queries::{
     CREATE_MEME_QUERY, DELETE_MEME_QUERY, GET_MEME_QUERY, LIST_MEMES_QUERY, MARK_AS_DONE_QUERY,
     UPDATE_MEME_QUERY,
@@ -12,7 +12,7 @@ use queries::{
 use sqlx::{Pool, Postgres};
 use uuid::Uuid;
 
-use crate::common::errors;
+use crate::{common::errors, utils::s3signer::S3Signer};
 
 const BUCKET_NAME: &str = "memes";
 
@@ -20,31 +20,32 @@ const BUCKET_NAME: &str = "memes";
 pub struct Module {
     conn: Pool<Postgres>,
     s3: Client,
+    signer: S3Signer,
 }
 
 impl Module {
-    pub async fn new(conn: Pool<Postgres>, s3: Client) -> Module {
-        Module { conn, s3 }
+    pub fn new(conn: Pool<Postgres>, s3: Client, signer: S3Signer) -> Module {
+        Module { conn, s3, signer }
     }
 
-    pub async fn list(&self) -> Result<Vec<Model>, errors::AppError> {
-        let mut rows = sqlx::query_as(LIST_MEMES_QUERY).fetch(&self.conn);
-        let mut memes = vec![];
+    pub async fn list(&self) -> Result<Vec<PubModel>, errors::AppError> {
+        let mut rows = sqlx::query_as::<_, Model>(LIST_MEMES_QUERY).fetch(&self.conn);
+        let mut memes: Vec<PubModel> = vec![];
 
         while let Some(meme) = rows.try_next().await? {
-            memes.push(meme)
+            memes.push(meme.to_pub(&self.signer).await?)
         }
 
         Ok(memes)
     }
 
-    pub async fn get(&self, id: Uuid) -> Result<Model, errors::AppError> {
+    pub async fn get(&self, id: Uuid) -> Result<PubModel, errors::AppError> {
         match sqlx::query_as::<_, Model>(GET_MEME_QUERY)
             .bind(id)
             .fetch_one(&self.conn)
             .await
         {
-            Ok(model) => Ok(model),
+            Ok(model) => model.to_pub(&self.signer).await,
             Err(e) => Err(e.into()),
         }
     }
@@ -53,7 +54,7 @@ impl Module {
         &self,
         form: CreateForm,
         file: tempfile::TempFile,
-    ) -> Result<Model, errors::AppError> {
+    ) -> Result<PubModel, errors::AppError> {
         // status model - so the s3 doesnt leak
         // OUTSIDE OF TRANSACTION make a record about an object
         // if upload was succesfull - mark it as done
@@ -81,10 +82,10 @@ impl Module {
             .execute(&self.conn)
             .await?;
 
-        Ok(model)
+        model.to_pub(&self.signer).await
     }
 
-    pub async fn update(&self, id: Uuid, form: UpdateForm) -> Result<Model, errors::AppError> {
+    pub async fn update(&self, id: Uuid, form: UpdateForm) -> Result<PubModel, errors::AppError> {
         match sqlx::query_as::<_, Model>(UPDATE_MEME_QUERY)
             .bind(id)
             .bind(form.name)
@@ -92,7 +93,7 @@ impl Module {
             .fetch_one(&self.conn)
             .await
         {
-            Ok(model) => Ok(model),
+            Ok(model) => model.to_pub(&self.signer).await,
             Err(e) => Err(e.into()),
         }
     }

@@ -1,6 +1,7 @@
 mod common;
 mod controllers;
 mod modules;
+mod utils;
 
 use actix_web::{
     web::{self, Data},
@@ -15,6 +16,7 @@ use minio::s3::http::BaseUrl;
 use modules::memes;
 use sqlx::postgres::PgPoolOptions;
 use std::{env, error::Error};
+use utils::s3signer::S3Signer;
 
 const BUCKET_NAME: &str = "memes";
 
@@ -75,9 +77,10 @@ pub async fn run(cfg: Config) -> Result<(), Box<dyn Error>> {
         .connect(&cfg.postgres_dsn)
         .await?;
 
-    let s3_client = connect_to_s3(cfg.s3)?;
+    let s3_client = connect_to_s3(&cfg.s3)?;
     setup_bucket(&s3_client).await?;
-    let meme_module = modules::memes::Module::new(pool, s3_client).await;
+    let signer = s3_signer(&cfg.s3);
+    let meme_module = modules::memes::Module::new(pool, s3_client, signer);
 
     let app_data = AppData {
         mods: Modules { memes: meme_module },
@@ -107,7 +110,7 @@ pub async fn run(cfg: Config) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn connect_to_s3(conf: S3) -> Result<Client, s3::error::Error> {
+fn connect_to_s3(conf: &S3) -> Result<Client, s3::error::Error> {
     let base_url = conf.base_url.parse::<BaseUrl>()?;
 
     let static_provider =
@@ -134,4 +137,8 @@ async fn setup_bucket(client: &Client) -> Result<(), s3::error::Error> {
     }
 
     Ok(())
+}
+
+fn s3_signer(conf: &S3) -> S3Signer {
+    S3Signer::new(conf.base_url.clone(), &conf.access_key, &conf.secret_key)
 }

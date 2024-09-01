@@ -12,6 +12,7 @@ serde = { version = "1.0", features = ["derive"] }
 derive_more = {version = "1.0.0", features = ["full"]}
 validator = { version = "0.18", features = ["derive"] }
 minio = "0.1"
+rust-s3 = "0.35" #to presign cause minio sucks
 
 [dependencies.sqlx]
 version = "=0.8"
