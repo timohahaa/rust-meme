@@ -5,13 +5,13 @@ CREATE TABLE IF NOT EXISTS memes.memes (
     meme_id       UUID      NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY
     , name        TEXT      NOT NULL 
     , description TEXT
-    , s3_path     UUID      NOT NULL
+    , s3_path     TEXT      NOT NULL
     , status      TEXT
     , created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     , updated_at  TIMESTAMP
     , deleted_at  TIMESTAMP
 
-    CONSTRAINT memes_valid_status CHECK (status IN ARRAY['uploading'::TEXT, 'done'::TEXT])
+    CONSTRAINT memes_valid_status CHECK (status = ANY(ARRAY['uploading'::TEXT, 'done'::TEXT]))
 );
 
 -- +migrate Down

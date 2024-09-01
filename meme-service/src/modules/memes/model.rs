@@ -1,4 +1,4 @@
-use actix_multipart::form::{tempfile::TempFile, text::Text as MpText, MultipartForm};
+use actix_multipart::form::{json::Json as MpJson, tempfile::TempFile, MultipartForm};
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -10,7 +10,7 @@ pub struct Model {
     pub id: Uuid,
     pub name: String,
     pub description: Option<String>,
-    pub object_id: Uuid,
+    pub s3_path: String,
     pub created_at: NaiveDateTime,
     pub updated_at: Option<NaiveDateTime>,
 }
@@ -26,7 +26,7 @@ pub struct CreateForm {
 pub struct UploadForm {
     #[multipart(limit = "100MB")]
     pub file: TempFile,
-    pub form: MpText<CreateForm>,
+    pub meta: MpJson<CreateForm>,
 }
 
 #[derive(Serialize, Deserialize, Validate)]

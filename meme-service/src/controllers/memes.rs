@@ -38,7 +38,7 @@ pub async fn create(
     upload_form: MultipartForm<model::UploadForm>,
 ) -> Result<impl Responder, AppError> {
     let uf = upload_form.into_inner();
-    let form = uf.form.into_inner();
+    let form = uf.meta.into_inner();
     form.validate()?;
     let file = uf.file;
     let meme = shared.mods.memes.create(form, file).await?;
