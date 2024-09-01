@@ -47,7 +47,7 @@ UPDATE memes.memes
 SET 
     status = 'done'
 WHERE meme_id = $1
-"
+";
 
 pub const update_meme_query: &str = "
 UPDATE memes.memes

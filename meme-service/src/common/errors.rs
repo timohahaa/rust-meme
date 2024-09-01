@@ -30,7 +30,7 @@ impl AppErrorType {
     fn code(&self) -> u32 {
         match self {
             AppErrorType::DbError => 500001,
-            AppErrorType::S3Error => 500002
+            AppErrorType::S3Error => 500002,
             AppErrorType::JsonValidationError => 400001,
             AppErrorType::ValidationError => 400002,
             AppErrorType::InvalidUUIDError => 400003,

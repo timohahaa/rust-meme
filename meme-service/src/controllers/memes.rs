@@ -41,7 +41,7 @@ pub async fn create(
     let form = uf.form.into_inner();
     form.validate()?;
     let file = uf.file;
-    let meme = shared.mods.memes.create(form).await?;
+    let meme = shared.mods.memes.create(form, file).await?;
 
     Ok(web::Json(meme))
 }
